@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="myco-ics">
+  <rect width="64" height="64" rx="13" fill="#e02424"/>
+  <path d="M32 11 L54 52 L10 52 Z" fill="#f4f7fb"/>
+  <rect x="29.6" y="25.6" width="4.8" height="14.7" rx="2.4" fill="#e02424"/>
+  <circle cx="32" cy="46" r="3.2" fill="#e02424"/>
+</svg>

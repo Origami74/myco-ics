@@ -1,0 +1,14 @@
+{
+  "relays": [
+    "wss://nostr.cercatrova.me",
+    "wss://relay.primal.net",
+    "wss://nos.lol",
+    "wss://relay.damus.io"
+  ],
+  "servers": [
+    "https://blossom.primal.net"
+  ],
+  "id": "ics",
+  "title": "Incident Command",
+  "description": "A cryptographically-verifiable ICS chain of command over a Myco BLE mesh — no internet, no servers."
+}
