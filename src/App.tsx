@@ -200,7 +200,6 @@ function OverviewTab({
 }) {
   const me = useMemo(() => verify(events, inc.id, myPubkey), [events, inc.id]);
   const chart = useMemo(() => orgChart(events, inc.id), [events, inc.id]);
-  const pending = useMemo(() => pendingForMe(events, inc.id, myPubkey), [events, inc.id]);
   const obj = useMemo(() => objective(events, inc.id), [events, inc.id]);
   const logs = useMemo(() => activityLog(events, inc.id), [events, inc.id]);
 
@@ -243,23 +242,7 @@ function OverviewTab({
       </div>
 
       {/* Accept/deny gate — leaders alone decide who joins under them (§8.3). */}
-      {pending.length > 0 && (
-        <>
-          <h2>Requests to you</h2>
-          {pending.map((r) => (
-            <div className="request" key={r.id}>
-              <span className="request-who">
-                <Identity events={events} pubkey={r.pubkey} size={22} />
-                <span>requests <b>{tag(r, "role") ?? "Member"}</b></span>
-              </span>
-              <span className="req-actions">
-                <button className="ok" onClick={() => accept(r).catch(reportErr)}>Accept</button>
-                <button className="ghost" onClick={() => deny(r).catch(reportErr)}>Deny</button>
-              </span>
-            </div>
-          ))}
-        </>
-      )}
+      <RequestsGate events={events} incidentId={inc.id} />
 
       <h2>Current objective <span className="hint">ICS-202</span></h2>
       {obj ? (
@@ -284,6 +267,10 @@ function ChainTab({ events, inc }: { events: NostrEvent[]; inc: Incident }) {
 
   return (
     <>
+      {/* Attestation requests awaiting my accept/deny — same gate as Overview,
+          surfaced here so a leader can act while reading the chain (§8.3). */}
+      <RequestsGate events={events} incidentId={inc.id} />
+
       <h2>Chain of command</h2>
       <OrgTree
         chart={chart}
@@ -310,7 +297,7 @@ function OrdersTab({ events, inc }: { events: NostrEvent[]; inc: Incident }) {
 
   return (
     <>
-      <h2>Objectives <span className="hint">ICS-202 · down</span></h2>
+      <SectionHead icon={IcObjective} title="Objectives" hint="ICS-202 · down" />
       {obj ? (
         <div className="card">
           <div>{obj.content}</div>
@@ -327,7 +314,7 @@ function OrdersTab({ events, inc }: { events: NostrEvent[]; inc: Incident }) {
         />
       )}
 
-      <h2>Assignments <span className="hint">ICS-204 · down, worked up</span></h2>
+      <SectionHead icon={IcAssignment} title="Assignments" hint="ICS-204 · down, worked up" divide />
       {assigns.length === 0 && <p className="empty">No assignments yet.</p>}
       {assigns.map((a) => (
         <AssignmentCard key={a.id} events={events} incidentId={inc.id} assignment={a} canWork={iAmIn} />
@@ -495,6 +482,58 @@ function PickPrompt({ onGo }: { onGo: () => void }) {
       Select an incident first.{" "}
       <button className="link" onClick={onGo}>Go to incidents →</button>
     </p>
+  );
+}
+
+// --- attestation requests gate (§8.3) ---------------------------------------
+// Role requests addressed to me and not yet answered. Accepting publishes the
+// 9472 attestation that puts the candidate in the chain under me. Shared by the
+// Overview and Chain tabs so the accept/deny action is wherever I'm looking.
+function RequestsGate({ events, incidentId }: { events: NostrEvent[]; incidentId: string }) {
+  const pending = useMemo(
+    () => pendingForMe(events, incidentId, myPubkey),
+    [events, incidentId],
+  );
+  if (pending.length === 0) return null;
+  return (
+    <>
+      <h2>Requests to you</h2>
+      {pending.map((r) => (
+        <div className="request" key={r.id}>
+          <span className="request-who">
+            <Identity events={events} pubkey={r.pubkey} size={22} />
+            <span>requests <b>{tag(r, "role") ?? "Member"}</b></span>
+          </span>
+          <span className="req-actions">
+            <button className="ok" onClick={() => accept(r).catch(reportErr)}>Accept</button>
+            <button className="ghost" onClick={() => deny(r).catch(reportErr)}>Deny</button>
+          </span>
+        </div>
+      ))}
+    </>
+  );
+}
+
+// A section header with a leading icon — used in Orders to visually separate the
+// two form families (202 objectives vs 204 assignments). `divide` rules a line
+// above it.
+function SectionHead({
+  icon: Icon,
+  title,
+  hint,
+  divide,
+}: {
+  icon: () => React.ReactNode;
+  title: string;
+  hint?: string;
+  divide?: boolean;
+}) {
+  return (
+    <h2 className={`sec-head ${divide ? "sec-head--divide" : ""}`}>
+      <span className="sec-icon"><Icon /></span>
+      {title}
+      {hint && <span className="hint">{hint}</span>}
+    </h2>
   );
 }
 
@@ -852,6 +891,10 @@ const IcOverview = () => svg(<><rect x="3" y="3" width="7" height="7" /><rect x=
 const IcChain = () => svg(<><rect x="9" y="3" width="6" height="5" /><rect x="3" y="16" width="6" height="5" /><rect x="15" y="16" width="6" height="5" /><path d="M12 8v4M6 16v-2h12v2" /></>);
 const IcDown = () => svg(<><path d="M12 4v12" /><path d="m6 12 6 6 6-6" /><path d="M4 21h16" /></>);
 const IcUp = () => svg(<><path d="M12 20V8" /><path d="m6 12 6-6 6 6" /><path d="M4 3h16" /></>);
+// Orders section icons: a target for strategic objectives (202), a task list
+// for tactical assignments (204).
+const IcObjective = () => svg(<><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" /></>);
+const IcAssignment = () => svg(<><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1" /><path d="M9 11h6M9 15h4" /></>);
 
 // --- helpers ----------------------------------------------------------------
 function reportErr(err: unknown) {
