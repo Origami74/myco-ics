@@ -17,7 +17,7 @@ import { dlog } from "./debug";
 // mesh. "People in the room" == whoever this relay is gossiping with. A
 // `?relay=` query param overrides it for browser dev against a throwaway relay.
 export const RELAY =
-  new URLSearchParams(location.search).get("relay") ?? "ws://localhost:4869";
+  new URLSearchParams(location.search).get("relay") ?? "ws://localhost:4870";
 
 // --- ICS event kinds (docs/design.md §5) ------------------------------------
 // Provisional POC values chosen for their Nostr classes: 9470–9475 are regular
